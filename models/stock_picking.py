@@ -10,9 +10,25 @@ class StockPicking(models.Model):
         help="Escanee el código de barras del producto para agregarlo a la orden de traslado.",
     )
 
+    def _search_product_by_scan(self, barcode):
+        """Busca un producto por código de barras o referencia interna.
+        Retorna el producto o None."""
+        barcode = (barcode or "").strip()
+        if not barcode:
+            return None
+        # Búsqueda case-insensitive en barcode y default_code
+        return self.env["product.product"].search(
+            [
+                "|",
+                ("barcode", "=ilike", barcode),
+                ("default_code", "=ilike", barcode),
+            ],
+            limit=1,
+        )
+
     @api.model
     def get_product_by_barcode(self, picking_id, barcode):
-        """Busca un producto por código de barras.
+        """Busca un producto por código de barras o referencia interna.
         Retorna info del producto o un dict con error."""
         barcode = (barcode or "").strip()
         if not barcode:
@@ -22,15 +38,13 @@ class StockPicking(models.Model):
                 "message": _("Código de barras vacío."),
             }
 
-        product = self.env["product.product"].search(
-            [("barcode", "=", barcode)], limit=1
-        )
+        product = self._search_product_by_scan(barcode)
         if not product:
             return {
                 "error": True,
                 "title": _("Producto no encontrado"),
                 "message": _(
-                    "No existe ningún producto con el código de barras: %s"
+                    "No existe ningún producto con el código: %s"
                 )
                 % barcode,
             }
@@ -49,9 +63,7 @@ class StockPicking(models.Model):
         if not barcode or quantity <= 0:
             return False
 
-        product = self.env["product.product"].search(
-            [("barcode", "=", barcode)], limit=1
-        )
+        product = self._search_product_by_scan(barcode)
         if not product:
             return False
 
