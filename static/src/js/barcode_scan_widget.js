@@ -1,5 +1,7 @@
 /** @odoo-module **/
 
+console.log("[BarcodeScanner] Cargando widget...");
+
 import { registry } from "@web/core/registry";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
 import { useService } from "@web/core/utils/hooks";
@@ -61,6 +63,7 @@ export class PickingBarcodeScanner extends Component {
         this.dialog = useService("dialog");
 
         onMounted(() => {
+            console.log("[BarcodeScanner] Widget montado en campo", this.props.name);
             if (this.inputRef.el) {
                 this.inputRef.el.focus();
             }
@@ -73,6 +76,11 @@ export class PickingBarcodeScanner extends Component {
 
     onInput(ev) {
         this.props.record.update({ [this.props.name]: ev.target.value });
+    }
+
+    onSubmit(ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
     }
 
     async onKeydown(ev) {
@@ -152,14 +160,17 @@ export class PickingBarcodeScanner extends Component {
 }
 
 PickingBarcodeScanner.template = xml`
-    <input
-        t-ref="input"
-        class="o_input"
-        t-att-value="value"
-        t-on-input="onInput"
-        t-on-keydown="onKeydown"
-        t-att-placeholder="props.placeholder || 'Escanee con la pistola...'"
-    />
+    <form t-on-submit.prevent="onSubmit" class="o_barcode_scan_form">
+        <input
+            type="text"
+            t-ref="input"
+            class="o_input"
+            t-att-value="value"
+            t-on-input="onInput"
+            t-on-keydown="onKeydown"
+            t-att-placeholder="props.placeholder || 'Escanee con la pistola...'"
+        />
+    </form>
 `;
 PickingBarcodeScanner.props = {
     ...standardFieldProps,
