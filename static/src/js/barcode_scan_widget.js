@@ -13,11 +13,12 @@ class BarcodeQuantityDialog extends Component {
     onInput(ev) {
         this.state.quantity = parseFloat(ev.target.value) || 0;
     }
-    confirm() {
+    async confirm() {
         if (this.state.quantity <= 0) {
             return;
         }
-        this.props.confirm(this.state.quantity);
+        await this.props.confirm(this.state.quantity);
+        this.props.close();
     }
 }
 BarcodeQuantityDialog.template = xml`
