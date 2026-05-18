@@ -44,7 +44,7 @@ BarcodeQuantityDialog.template = xml`
         </div>
         <div class="mb-3">
             <label for="barcode_qty_input" class="form-label">Cantidad:</label>
-            <input type="number" class="o_input" id="barcode_qty_input" t-ref="qtyInput" t-att-value="state.quantity" t-on-input="onInput" t-on-keydown.stop.prevent="onKeydown" step="0.01"/>
+            <input type="number" class="o_input" id="barcode_qty_input" t-ref="qtyInput" t-att-value="state.quantity" t-on-input="onInput" t-on-keydown="onKeydown" step="0.01"/>
         </div>
         <t t-set-slot="footer">
             <button class="btn btn-primary" t-on-click="confirm">Agregar</button>
