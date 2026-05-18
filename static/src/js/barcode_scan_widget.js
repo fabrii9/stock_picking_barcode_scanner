@@ -13,6 +13,12 @@ class BarcodeQuantityDialog extends Component {
     onInput(ev) {
         this.state.quantity = parseFloat(ev.target.value) || 0;
     }
+    onKeydown(ev) {
+        if (ev.key === "Enter") {
+            ev.preventDefault();
+            this.confirm();
+        }
+    }
     async confirm() {
         if (this.state.quantity <= 0) {
             return;
@@ -28,7 +34,7 @@ BarcodeQuantityDialog.template = xml`
         </div>
         <div class="mb-3">
             <label for="barcode_qty_input" class="form-label">Cantidad:</label>
-            <input type="number" class="o_input" id="barcode_qty_input" t-att-value="state.quantity" t-on-input="onInput" step="0.01"/>
+            <input type="number" class="o_input" id="barcode_qty_input" t-att-value="state.quantity" t-on-input="onInput" t-on-keydown="onKeydown" step="0.01"/>
         </div>
         <t t-set-slot="footer">
             <button class="btn btn-primary" t-on-click="confirm">Agregar</button>
