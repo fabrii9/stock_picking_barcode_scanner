@@ -103,23 +103,30 @@ export class PickingBarcodeScanner extends Component {
                 }
 
                 // Abrir dialog para cantidad
-                this.dialog.add(BarcodeQuantityDialog, {
-                    title: "Agregar producto",
-                    productName: productInfo.product_name,
-                    confirm: async (quantity) => {
-                        await this.orm.call(
-                            "stock.picking",
-                            "add_product_by_barcode",
-                            [pickingId, barcode, quantity],
-                            { context: this.props.record.context }
-                        );
-                        await this.props.record.update({ [this.props.name]: "" });
-                        await this.props.record.load();
-                        if (this.inputRef.el) {
-                            this.inputRef.el.focus();
-                        }
+                this.dialog.add(
+                    BarcodeQuantityDialog,
+                    {
+                        title: "Agregar producto",
+                        productName: productInfo.product_name,
+                        confirm: async (quantity) => {
+                            await this.orm.call(
+                                "stock.picking",
+                                "add_product_by_barcode",
+                                [pickingId, barcode, quantity],
+                                { context: this.props.record.context }
+                            );
+                            await this.props.record.load();
+                        },
                     },
-                });
+                    {
+                        onClose: () => {
+                            this.props.record.update({ [this.props.name]: "" });
+                            if (this.inputRef.el) {
+                                this.inputRef.el.focus();
+                            }
+                        },
+                    }
+                );
             } catch (error) {
                 console.error(error);
                 await this.props.record.update({ [this.props.name]: "" });
