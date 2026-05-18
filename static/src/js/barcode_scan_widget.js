@@ -64,9 +64,6 @@ export class PickingBarcodeScanner extends Component {
 
         onMounted(() => {
             console.log("[BarcodeScanner] Widget montado en campo", this.props.name);
-            if (this.inputRef.el) {
-                this.inputRef.el.focus();
-            }
         });
     }
 
@@ -83,78 +80,83 @@ export class PickingBarcodeScanner extends Component {
         ev.stopPropagation();
     }
 
-    async onKeydown(ev) {
+    onKeydown(ev) {
         if (ev.key === "Enter" || ev.keyCode === 13 || ev.which === 13) {
             ev.preventDefault();
             ev.stopPropagation();
-            const barcode = ev.target.value.trim();
-            console.log("[BarcodeScanner] Scan capturado:", barcode);
-            if (!barcode) return;
+            // Esperar a que la pistola termine de escribir en el DOM
+            setTimeout(() => this._processScan(), 100);
+        }
+    }
 
-            let pickingId = this.props.record.resId;
+    async _processScan() {
+        const barcode = this.inputRef.el ? this.inputRef.el.value.trim() : "";
+        console.log("[BarcodeScanner] Scan capturado:", barcode);
+        if (!barcode) return;
 
-            // Si el picking es nuevo, guardarlo primero
-            if (!pickingId) {
-                const saved = await this.props.record.save();
-                if (!saved) {
-                    this.notification.add(
-                        "Guarde la orden de traslado antes de escanear.",
-                        { type: "warning" }
-                    );
-                    return;
-                }
-                pickingId = this.props.record.resId;
+        let pickingId = this.props.record.resId;
+
+        // Si el picking es nuevo, guardarlo primero
+        if (!pickingId) {
+            const saved = await this.props.record.save();
+            if (!saved) {
+                this.notification.add(
+                    "Guarde la orden de traslado antes de escanear.",
+                    { type: "warning" }
+                );
+                return;
             }
+            pickingId = this.props.record.resId;
+        }
 
-            try {
-                const productInfo = await this.orm.call(
-                    "stock.picking",
-                    "get_product_by_barcode",
-                    [pickingId, barcode],
-                    { context: this.props.record.context }
-                );
+        try {
+            const productInfo = await this.orm.call(
+                "stock.picking",
+                "get_product_by_barcode",
+                [pickingId, barcode],
+                { context: this.props.record.context }
+            );
 
-                if (productInfo.error) {
-                    this.notification.add(productInfo.message, {
-                        title: productInfo.title,
-                        type: "warning",
-                    });
-                    await this.props.record.update({ [this.props.name]: "" });
-                    if (this.inputRef.el) {
-                        this.inputRef.el.focus();
-                    }
-                    return;
-                }
-
-                // Abrir dialog para cantidad
-                this.dialog.add(
-                    BarcodeQuantityDialog,
-                    {
-                        title: "Agregar producto",
-                        productName: productInfo.product_name,
-                        confirm: async (quantity) => {
-                            await this.orm.call(
-                                "stock.picking",
-                                "add_product_by_barcode",
-                                [pickingId, barcode, quantity],
-                                { context: this.props.record.context }
-                            );
-                            await this.props.record.load();
-                        },
-                    },
-                    {
-                        onClose: () => {
-                            this.props.record.update({ [this.props.name]: "" });
-                            if (this.inputRef.el) {
-                                this.inputRef.el.focus();
-                            }
-                        },
-                    }
-                );
-            } catch (error) {
-                console.error(error);
+            if (productInfo.error) {
+                this.notification.add(productInfo.message, {
+                    title: productInfo.title,
+                    type: "warning",
+                });
                 await this.props.record.update({ [this.props.name]: "" });
+                if (this.inputRef.el) {
+                    this.inputRef.el.focus();
+                }
+                return;
             }
+
+            // Abrir dialog para cantidad
+            this.dialog.add(
+                BarcodeQuantityDialog,
+                {
+                    title: "Agregar producto",
+                    productName: productInfo.product_name,
+                    confirm: async (quantity) => {
+                        await this.orm.call(
+                            "stock.picking",
+                            "add_product_by_barcode",
+                            [pickingId, barcode, quantity],
+                            { context: this.props.record.context }
+                        );
+                        await this.props.record.load();
+                    },
+                },
+                {
+                    onClose: () => {
+                        this.props.record.update({ [this.props.name]: "" });
+                        if (this.inputRef.el) {
+                            this.inputRef.el.focus();
+                        }
+                    },
+                }
+            );
+        } catch (error) {
+            console.error(error);
+            await this.props.record.update({ [this.props.name]: "" });
         }
     }
 }
