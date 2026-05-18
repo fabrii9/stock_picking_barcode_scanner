@@ -21,8 +21,9 @@ class BarcodeQuantityDialog extends Component {
         this.state.quantity = parseFloat(ev.target.value) || 0;
     }
     onKeydown(ev) {
-        if (ev.key === "Enter") {
+        if (ev.key === "Enter" || ev.keyCode === 13 || ev.which === 13) {
             ev.preventDefault();
+            ev.stopPropagation();
             this.confirm();
         }
     }
@@ -75,9 +76,11 @@ export class PickingBarcodeScanner extends Component {
     }
 
     async onKeydown(ev) {
-        if (ev.key === "Enter") {
+        if (ev.key === "Enter" || ev.keyCode === 13 || ev.which === 13) {
             ev.preventDefault();
+            ev.stopPropagation();
             const barcode = ev.target.value.trim();
+            console.log("[BarcodeScanner] Scan capturado:", barcode);
             if (!barcode) return;
 
             let pickingId = this.props.record.resId;
