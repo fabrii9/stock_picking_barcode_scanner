@@ -10,51 +10,70 @@ class StockPicking(models.Model):
         help="Escanee el código de barras del producto para agregarlo a la orden de traslado.",
     )
 
-    @api.onchange("barcode_scan")
-    def _onchange_barcode_scan(self):
-        if not self.barcode_scan:
-            return
-
-        barcode = self.barcode_scan.strip()
+    @api.model
+    def get_product_by_barcode(self, picking_id, barcode):
+        """Busca un producto por código de barras.
+        Retorna info del producto o un dict con error."""
+        barcode = (barcode or "").strip()
         if not barcode:
-            self.barcode_scan = False
-            return
+            return {
+                "error": True,
+                "title": _("Error"),
+                "message": _("Código de barras vacío."),
+            }
 
         product = self.env["product.product"].search(
             [("barcode", "=", barcode)], limit=1
         )
-
         if not product:
-            self.barcode_scan = False
             return {
-                "warning": {
-                    "title": _("Producto no encontrado"),
-                    "message": _(
-                        "No existe ningún producto con el código de barras: %s"
-                    )
-                    % barcode,
-                }
+                "error": True,
+                "title": _("Producto no encontrado"),
+                "message": _(
+                    "No existe ningún producto con el código de barras: %s"
+                )
+                % barcode,
             }
 
-        # Buscar si ya existe una línea con este producto para sumar cantidad
-        existing_move = self.move_ids_without_package.filtered(
+        return {
+            "error": False,
+            "product_id": product.id,
+            "product_name": product.display_name,
+        }
+
+    @api.model
+    def add_product_by_barcode(self, picking_id, barcode, quantity):
+        """Agrega o suma una línea de producto al picking según el barcode y cantidad."""
+        barcode = (barcode or "").strip()
+        quantity = float(quantity or 0)
+        if not barcode or quantity <= 0:
+            return False
+
+        product = self.env["product.product"].search(
+            [("barcode", "=", barcode)], limit=1
+        )
+        if not product:
+            return False
+
+        picking = self.browse(picking_id)
+        if not picking.exists():
+            return False
+
+        existing_move = picking.move_ids_without_package.filtered(
             lambda m: m.product_id == product
         )
 
         if existing_move:
-            # Sumar 1 a la cantidad de la primera línea encontrada
-            existing_move[0].product_uom_qty += 1.0
+            existing_move[0].product_uom_qty += quantity
         else:
-            # Crear nueva línea
             vals = {
                 "product_id": product.id,
-                "product_uom_qty": 1.0,
+                "product_uom_qty": quantity,
                 "product_uom": product.uom_id.id,
                 "name": product.display_name or product.name,
-                "location_id": self.location_id.id,
-                "location_dest_id": self.location_dest_id.id,
+                "location_id": picking.location_id.id,
+                "location_dest_id": picking.location_dest_id.id,
             }
-            self.move_ids_without_package = [fields.Command.create(vals)]
+            picking.move_ids_without_package = [fields.Command.create(vals)]
 
-        # Limpiar el campo para el próximo escaneo
-        self.barcode_scan = False
+        return True

@@ -8,6 +8,7 @@
             <!-- Insertar después de backorder_id (mismo grupo que ubicaciones) para que aparezca siempre -->
             <xpath expr="//field[@name='backorder_id']" position="after">
                 <field name="barcode_scan"
+                       widget="picking_barcode_scanner"
                        string="Escanear código de barras"
                        placeholder="Escanee con la pistola..."
                        readonly="state in ('done', 'cancel')"/>
