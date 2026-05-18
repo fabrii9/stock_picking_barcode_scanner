@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_picking_form_inherit_barcode_scan" model="ir.ui.view">
+        <field name="name">stock.picking.form.inherit.barcode.scan</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <!-- Insertar después de backorder_id (mismo grupo que ubicaciones) para que aparezca siempre -->
+            <xpath expr="//field[@name='backorder_id']" position="after">
+                <field name="barcode_scan"
+                       string="Escanear código de barras"
+                       placeholder="Escanee con la pistola..."
+                       readonly="state in ('done', 'cancel')"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
